@@ -2,14 +2,20 @@ var connection = require ('../config/connection');
 
 function Todo() {
   this.get = function(res) {
-    connection.acquire(function(err,con) {
-      con.query('select * from todo_list', function(err,result) {
-        con.release();
-        res.send(result);
-        console.log("Get successful");
-      });
+  connection.acquire(function(err, con) {
+    con.query('SELECT * FROM todo_list', function(err, result) {
+      con.release();
+      if (err) {
+        console.log('🟥 Get failed:', err);
+        res.status(500).send({ status: 1, message: 'Failed to load todos' });
+      } else {
+        console.log('✅ Get successful, returning:', result);
+        res.json(result); // ✅ Important: MUST send valid JSON!
+      }
     });
-  };
+  });
+};
+
   this.getByID = function(id,res) {
     connection.acquire(function(err,con) {
       con.query('select * from todo_list where id = ?', id, function(err,result) {
