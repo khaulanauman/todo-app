@@ -1,69 +1,81 @@
-var connection = require ('../config/connection');
+const connection = require('../config/connection');
 
 function Todo() {
   this.get = function(res) {
-  connection.acquire(function(err, con) {
-    con.query('SELECT * FROM todo_list', function(err, result) {
-      con.release();
-      if (err) {
-        console.log('🟥 Get failed:', err);
-        res.status(500).send({ status: 1, message: 'Failed to load todos' });
-      } else {
-        console.log('✅ Get successful, returning:', result);
-        res.json(result); // ✅ Important: MUST send valid JSON!
-      }
+    connection.acquire(function(err, con) {
+      con.query('SELECT * FROM todo_list', function(err, result) {
+        con.release();
+        if (err) {
+          console.log('🟥 Get failed:', err);
+          res.status(500).json({ status: 1, message: 'Failed to load todos' });
+        } else {
+          console.log('✅ Get successful, returning:', result);
+          res.json(result);
+        }
+      });
     });
-  });
-};
+  };
 
-  this.getByID = function(id,res) {
-    connection.acquire(function(err,con) {
-      con.query('select * from todo_list where id = ?', id, function(err,result) {
-        con.release();
-        res.send(result);
-        console.log("Get by ID successful");
-      });
-    });
-  };
-  this.create = function(todo,res) {
-    connection.acquire(function(err,con) {
-      con.query('insert into todo_list set ?', todo, function(err,result) {
+  this.getByID = function(id, res) {
+    connection.acquire(function(err, con) {
+      con.query('SELECT * FROM todo_list WHERE id = ?', id, function(err, result) {
         con.release();
         if (err) {
-          res.send({status:1, message:'TODO creation fail'});
+          console.log('🟥 Get by ID failed:', err);
+          res.status(500).json({ status: 1, message: 'Failed to get todo by ID' });
         } else {
-          res.send({status:0, message:'TODO create success'});
-          console.log("Post successful");
+          console.log("✅ Get by ID successful:", result);
+          res.json(result);
         }
       });
     });
   };
-  this.update = function(todo,id,res) {
-    connection.acquire(function(err,con) {
-      con.query('update todo_list set name = ? where id = ?', [todo, id], function(err,result) {
+
+  this.create = function(todo, res) {
+    console.log("🟨 Received new todo:", todo);  // Debug log
+    connection.acquire(function(err, con) {
+      con.query('INSERT INTO todo_list SET ?', todo, function(err, result) {
         con.release();
         if (err) {
-          res.send({status:1, message:'TODO update fail'});
+          console.log("🟥 Create failed:", err);
+          res.status(500).json({ status: 1, message: 'TODO creation fail' });
         } else {
-          res.send({status:0, message:'TODO update success'});
-          console.log("Put successful");
+          console.log("✅ Post successful, inserted ID:", result.insertId);
+          res.status(201).json({ id: result.insertId, ...todo });
         }
       });
     });
   };
-  this.delete = function(id,res) {
-    connection.acquire(function(err,con) {
-      con.query('delete from todo_list where id = ?', id, function(err,result) {
+
+  this.update = function(todo, id, res) {
+    connection.acquire(function(err, con) {
+      con.query('UPDATE todo_list SET name = ? WHERE id = ?', [todo, id], function(err, result) {
         con.release();
         if (err) {
-          res.send({status:1, message:'TODO delete fail'});
+          console.log("🟥 Update failed:", err);
+          res.status(500).json({ status: 1, message: 'TODO update fail' });
         } else {
-          res.send({status:0, message:'TODO delete success'});
-          console.log("Delete successful");
+          console.log("✅ Update successful:", result);
+          res.json({ status: 0, message: 'TODO update success' });
         }
       });
     });
   };
-};
+
+  this.delete = function(id, res) {
+    connection.acquire(function(err, con) {
+      con.query('DELETE FROM todo_list WHERE id = ?', id, function(err, result) {
+        con.release();
+        if (err) {
+          console.log("🟥 Delete failed:", err);
+          res.status(500).json({ status: 1, message: 'TODO delete fail' });
+        } else {
+          console.log("✅ Delete successful:", result);
+          res.json({ status: 0, message: 'TODO delete success' });
+        }
+      });
+    });
+  };
+}
 
 module.exports = new Todo();
